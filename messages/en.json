@@ -247,7 +247,10 @@
       "contactInfo": "Contact info",
       "tags": "Tags",
       "notes": "Notes",
-      "deals": "Deals"
+      "deals": "Deals",
+      "noTags": "No tags",
+      "noDeals": "No deals",
+      "addNotePlaceholder": "Add a note..."
     }
   },
   "Contacts": {
@@ -333,7 +336,10 @@
         "activity": "Activity",
         "notes": "Notes",
         "custom": "Custom Fields",
-        "deals": "Deals"
+        "deals": "Deals",
+      "noTags": "No tags",
+      "noDeals": "No deals",
+      "addNotePlaceholder": "Add a note..."
       },
       "actions": {
         "edit": "Edit",
