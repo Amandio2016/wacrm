@@ -9,6 +9,7 @@ import { groupSlotsByDay, formatSlotLabel, formatTimeLabel } from "./format";
 import {
   createAppointment,
   cancelAppointment,
+  confirmAppointment,
   rescheduleAppointment,
 } from "./book";
 
@@ -107,6 +108,53 @@ export async function dispatchInboundToAppointmentBot(
       .eq("id", input.conversationId)
       .maybeSingle();
     if (convo?.assigned_to) return { consumed: false };
+
+    // Respostas aos botões dos TEMPLATES (lembrete 24h, recuperação de
+    // falta) carregam o id do agendamento no payload e chegam sem
+    // sessão — o paciente toca no botão horas ou dias depois. Tratadas
+    // antes de qualquer lógica de sessão.
+    if (input.message.kind === "interactive_reply") {
+      const rid = input.message.reply_id;
+      const confirmMatch = rid.match(/^apt:confirmar:(.+)$/);
+      if (confirmMatch) {
+        const ctx: Ctx = { db, input };
+        const ok = await confirmAppointment(db, input.accountId, confirmMatch[1]);
+        await send.text(
+          ctx,
+          ok
+            ? "✅ Consulta confirmada. Até breve!"
+            : "Esta consulta já não está ativa. Escreva *marcar* se quiser um novo horário.",
+        );
+        return { consumed: true };
+      }
+      const rescheduleMatch = rid.match(/^apt:reagendar:(.+)$/);
+      if (rescheduleMatch) {
+        const ctx: Ctx = { db, input };
+        const { data: apt } = await db
+          .from("agendamentos")
+          .select("id, status, profissional_id, profissionais(nome, duracao_consulta_minutos)")
+          .eq("id", rescheduleMatch[1])
+          .eq("account_id", input.accountId)
+          .maybeSingle();
+        const prof = apt?.profissionais as unknown as {
+          nome: string;
+          duracao_consulta_minutos: number;
+        } | null;
+        if (apt && prof && ["pendente", "confirmado", "falta"].includes(apt.status)) {
+          await stepDia(ctx, {
+            agendamento_id: apt.id,
+            remarcar: apt.status !== "falta",
+            profissional_id: apt.profissional_id,
+            profissional_nome: prof.nome,
+            duracao_minutos: prof.duracao_consulta_minutos,
+          });
+        } else {
+          await upsertSession(ctx, "menu", {});
+          await showMenu(ctx);
+        }
+        return { consumed: true };
+      }
+    }
 
     const { data: sessionRow } = await db
       .from("agendamento_sessoes")

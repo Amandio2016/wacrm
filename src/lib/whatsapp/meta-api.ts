@@ -358,6 +358,14 @@ export interface SendTemplateMessageArgs {
    * in `buttonParams` keyed by index.
    */
   messageParams?: SendTimeParams
+  /**
+   * Raw components passthrough — wins over `template`/`params` when
+   * set. For callers whose template is NOT a message_templates row
+   * (the appointment cron's fixed Utility templates) and who need
+   * shapes buildSendComponents doesn't produce, such as quick-reply
+   * buttons with per-send payloads.
+   */
+  components?: Record<string, unknown>[]
   /** Meta's message_id of the message being replied to. */
   contextMessageId?: string
 }
@@ -385,6 +393,7 @@ export async function sendTemplateMessage(
     params,
     template,
     messageParams,
+    components: rawComponents,
     contextMessageId,
   } = args
   const url = `${META_API_BASE}/${phoneNumberId}/messages`
@@ -394,7 +403,9 @@ export async function sendTemplateMessage(
     language: { code: language },
   }
 
-  if (template) {
+  if (rawComponents && rawComponents.length > 0) {
+    templatePayload.components = rawComponents
+  } else if (template) {
     const components = buildSendComponents(template, {
       // Legacy callers pass body values in `params`; fold them into
       // `messageParams.body` so the new path covers them too.

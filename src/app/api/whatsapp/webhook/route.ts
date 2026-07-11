@@ -58,6 +58,13 @@ interface WhatsAppMessage {
     button_reply?: { id: string; title: string }
     list_reply?: { id: string; title: string; description?: string }
   }
+  /**
+   * Set when the customer taps a quick-reply button on a TEMPLATE
+   * message (the 24h reminder, no-show recovery). Different shape from
+   * `interactive` — Meta delivers template button taps as their own
+   * message type, with the payload we set at send time.
+   */
+  button?: { payload: string; text: string }
   /** Present when the customer swipe-replies to one of our messages. */
   context?: { id: string }
 }
@@ -961,6 +968,22 @@ async function parseMessageContent(
 
     case 'reaction':
       return { ...empty, contentText: message.reaction?.emoji || null }
+
+    case 'button': {
+      // Quick-reply tap on a TEMPLATE message (e.g. the appointment
+      // reminder's "Confirmar"). The payload is whatever we set when
+      // sending the template — route it exactly like an interactive
+      // reply so the engines (appointment bot, flows) treat both taps
+      // uniformly.
+      if (message.button?.payload) {
+        return {
+          ...empty,
+          contentText: message.button.text || message.button.payload,
+          interactiveReplyId: message.button.payload,
+        }
+      }
+      return { ...empty, contentText: '[Button reply]' }
+    }
 
     case 'interactive': {
       // The customer tapped a reply button or a list row on a message
