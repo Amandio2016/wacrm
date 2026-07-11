@@ -7,6 +7,7 @@ import { findExistingContact, isUniqueViolation } from '@/lib/contacts/dedupe'
 import { verifyMetaWebhookSignature } from '@/lib/whatsapp/webhook-signature'
 import { runAutomationsForTrigger } from '@/lib/automations/engine'
 import { dispatchInboundToFlows } from '@/lib/flows/engine'
+import { dispatchInboundToAppointmentBot } from '@/lib/appointments/bot'
 import { dispatchInboundToAiReply } from '@/lib/ai/auto-reply'
 import { dispatchWebhookEvent } from '@/lib/webhooks/deliver'
 import {
@@ -726,26 +727,43 @@ async function processMessage(
   // no active flows take the runner's early-exit "no_match" path
   // basically for free (one indexed SELECT for the active run).
   // ============================================================
-  const flowResult = await dispatchInboundToFlows({
+  const inboundForEngines =
+    interactiveReplyId
+      ? {
+          kind: 'interactive_reply' as const,
+          reply_id: interactiveReplyId,
+          reply_title: contentText ?? '',
+          meta_message_id: message.id,
+        }
+      : {
+          kind: 'text' as const,
+          text: contentText ?? message.text?.body ?? '',
+          meta_message_id: message.id,
+        }
+
+  // O bot de agendamento (ClinBoost) corre ANTES de flows e AI: numa
+  // conta em modo clínica (≥1 profissional ativo), marcar consultas É o
+  // produto. Devolve consumed=false para tudo o que não lhe diz
+  // respeito (sem sessão ativa + sem intenção de marcação), e os
+  // motores seguintes correm exatamente como antes.
+  const appointmentResult = await dispatchInboundToAppointmentBot({
     accountId,
     userId: configOwnerUserId,
     contactId: contactRecord.id,
     conversationId: conversation.id,
-    message:
-      interactiveReplyId
-        ? {
-            kind: 'interactive_reply',
-            reply_id: interactiveReplyId,
-            reply_title: contentText ?? '',
-            meta_message_id: message.id,
-          }
-        : {
-            kind: 'text',
-            text: contentText ?? message.text?.body ?? '',
-            meta_message_id: message.id,
-          },
-    isFirstInboundMessage,
+    message: inboundForEngines,
   })
+
+  const flowResult = appointmentResult.consumed
+    ? { consumed: true }
+    : await dispatchInboundToFlows({
+        accountId,
+        userId: configOwnerUserId,
+        contactId: contactRecord.id,
+        conversationId: conversation.id,
+        message: inboundForEngines,
+        isFirstInboundMessage,
+      })
   const flowConsumed = flowResult.consumed
 
   // Fire any automations that react to this webhook event. All dispatches
