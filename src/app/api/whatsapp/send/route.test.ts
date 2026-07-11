@@ -54,6 +54,24 @@ function makeSupabaseMock() {
           }
         case 'message_templates':
           return { data: null, error: null }
+        // Sending is gated on a live subscription (migration 039). These
+        // tests are about the send path, not billing, so hand them an
+        // account that's paid up — the 402 path has its own coverage in
+        // lib/billing/entitlements.test.ts.
+        case 'subscriptions':
+          return {
+            data: {
+              id: 'sub-1',
+              account_id: 'acct-1',
+              plan_id: null,
+              status: 'active',
+              current_period_end: new Date(
+                Date.now() + 30 * 86_400_000,
+              ).toISOString(),
+              trial_ends_at: null,
+            },
+            error: null,
+          }
         default:
           return { data: null, error: null }
       }

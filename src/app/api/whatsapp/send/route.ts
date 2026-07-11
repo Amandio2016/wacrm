@@ -10,6 +10,7 @@ import {
   validateSendMessageParams,
   SendMessageError,
 } from '@/lib/whatsapp/send-message'
+import { requireActiveSubscription } from '@/lib/billing/server'
 
 // The dashboard's outbound-send endpoint. It owns auth, per-user rate
 // limiting, and the two ways the UI targets a thread — an existing
@@ -59,6 +60,12 @@ export async function POST(request: Request) {
         { status: 403 },
       )
     }
+
+    // Sending is the chargeable action, so it is where the subscription
+    // is enforced. Reads stay open even when a subscription lapses — a
+    // customer who stops paying keeps access to their own data.
+    const gate = await requireActiveSubscription(supabase, accountId)
+    if ('response' in gate) return gate.response
 
     const body = await request.json()
     const {

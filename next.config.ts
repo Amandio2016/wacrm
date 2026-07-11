@@ -1,7 +1,15 @@
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import type { NextConfig } from "next";
 import createNextIntlPlugin from "next-intl/plugin";
 
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
+
+// Turbopack infers the workspace root by walking up for a lockfile and
+// taking the outermost match. A stray package-lock.json anywhere above
+// the project (e.g. in the user's home directory) therefore makes it
+// watch that entire tree, and compilation stalls. Pin the root here.
+const projectRoot = path.dirname(fileURLToPath(import.meta.url));
 
 /**
  * Baseline security headers applied to every response.
@@ -64,6 +72,18 @@ const SECURITY_HEADERS = [
 ] as const;
 
 const nextConfig: NextConfig = {
+  turbopack: {
+    root: projectRoot,
+  },
+
+  experimental: {
+    // On by default since Next 16.1. It writes a large cache into
+    // .next/ on every dev compile; when the project lives on a synced
+    // folder (OneDrive) those writes are intercepted by the sync
+    // client and the compile stalls, then OOMs on a low-RAM machine.
+    turbopackFileSystemCacheForDev: false,
+  },
+
   /**
    * Cache-Control policy.
    *

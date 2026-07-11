@@ -40,9 +40,14 @@ interface Profile {
 interface AccountSummary {
   id: string;
   name: string;
-  /** Default deal currency (ISO-4217). NOT NULL DEFAULT 'USD' in the
-   *  DB (migration 021); narrowed to DEFAULT_CURRENCY when absent. */
+  /** Default deal currency (ISO-4217). NOT NULL DEFAULT 'MZN' in the
+   *  DB (migrations 021 + 037); narrowed to DEFAULT_CURRENCY when absent. */
   default_currency: string;
+  /** White-label logo (migration 038). Null = fall back to the app mark. */
+  logo_url: string | null;
+  /** White-label product name (migration 038). Null = fall back to the
+   *  translated app title. */
+  brand_name: string | null;
 }
 
 interface AuthContextValue {
@@ -169,9 +174,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (data.account_id) {
           const { data: account, error: accountErr } = await supabase
             .from("accounts")
-            // default_currency added in migration 021; narrowed to the
-            // USD fallback below for older schemas where it reads null.
-            .select("id, name, default_currency")
+            // default_currency added in migration 021; logo_url /
+            // brand_name in 038. Narrowed below so older schemas that
+            // read null still resolve an account.
+            .select("id, name, default_currency, logo_url, brand_name")
             .eq("id", data.account_id)
             .maybeSingle();
           if (accountErr) {
@@ -186,6 +192,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               id: account.id,
               name: account.name,
               default_currency: account.default_currency ?? DEFAULT_CURRENCY,
+              logo_url: account.logo_url ?? null,
+              brand_name: account.brand_name ?? null,
             };
           }
         }

@@ -15,6 +15,7 @@ import {
   rateLimitResponse,
   RATE_LIMITS,
 } from '@/lib/rate-limit'
+import { requireActiveSubscription } from '@/lib/billing/server'
 
 interface BroadcastResult {
   phone: string
@@ -95,6 +96,11 @@ export async function POST(request: Request) {
         { status: 403 },
       )
     }
+
+    // Broadcasts are the single most expensive action in the product.
+    // Gate them on a live subscription.
+    const gate = await requireActiveSubscription(supabase, accountId)
+    if ('response' in gate) return gate.response
 
     const body = await request.json()
     const {
