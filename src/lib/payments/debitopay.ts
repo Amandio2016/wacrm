@@ -33,20 +33,32 @@ export const DEBITOPAY_METHODS: DebitopayMethod[] = [
 interface DebitopayConfig {
   apiKey: string;
   merchantId: string;
-  walletCode: string;
+  /** One wallet per payment method — that's how DebitoPay models it
+   *  (each merchant wallet carries a `payment_method`). A method whose
+   *  wallet env var is unset is simply not offered. */
+  wallets: Partial<Record<DebitopayMethod, string>>;
 }
 
 /**
- * Null when any of the three env vars is missing — the caller treats
- * that as "automated payments not configured" and falls back to the
- * manual flow, rather than half-working with a cryptic provider error.
+ * Null when the key or merchant id is missing, or when NO wallet is
+ * configured — the caller treats that as "automated payments not
+ * configured" and falls back to the manual flow, rather than
+ * half-working with a cryptic provider error.
  */
 export function getDebitopayConfig(): DebitopayConfig | null {
   const apiKey = process.env.DEBITOPAY_API_KEY;
   const merchantId = process.env.DEBITOPAY_MERCHANT_ID;
-  const walletCode = process.env.DEBITOPAY_WALLET_CODE;
-  if (!apiKey || !merchantId || !walletCode) return null;
-  return { apiKey, merchantId, walletCode };
+  if (!apiKey || !merchantId) return null;
+
+  const wallets: DebitopayConfig["wallets"] = {
+    mpesa: process.env.DEBITOPAY_WALLET_MPESA || undefined,
+    emola: process.env.DEBITOPAY_WALLET_EMOLA || undefined,
+    mkesh: process.env.DEBITOPAY_WALLET_MKESH || undefined,
+    visa_mastercard: process.env.DEBITOPAY_WALLET_CARD || undefined,
+  };
+
+  if (!Object.values(wallets).some(Boolean)) return null;
+  return { apiKey, merchantId, wallets };
 }
 
 export interface CreatePaymentInput {
@@ -92,11 +104,23 @@ export async function createDebitopayPayment(
     };
   }
 
+  const walletCode = config.wallets[input.method];
+  if (!walletCode) {
+    return {
+      ok: false,
+      providerPaymentId: null,
+      status: "failed",
+      reference: null,
+      checkoutUrl: null,
+      error: `METHOD_NOT_CONFIGURED:${input.method}`,
+    };
+  }
+
   const body: Record<string, unknown> = {
     action: "process",
     payment_method: input.method,
     merchant_id: config.merchantId,
-    wallet_code: config.walletCode,
+    wallet_code: walletCode,
     amount: input.amount,
     currency: input.currency,
     source: "gateway",
