@@ -112,7 +112,7 @@ function wallTimeToUtc(tz: string, ymd: string, hhmm: string): Date {
   const [h, mi] = hhmm.split(":").map(Number);
   const naive = Date.UTC(y, mo - 1, d, h, mi);
 
-  let offset = tzOffsetMs(tz, new Date(naive));
+  const offset = tzOffsetMs(tz, new Date(naive));
   let guess = new Date(naive - offset);
   const refined = tzOffsetMs(tz, guess);
   if (refined !== offset) guess = new Date(naive - refined);
