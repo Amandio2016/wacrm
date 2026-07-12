@@ -3,26 +3,25 @@
 import { useCallback, useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/hooks/use-auth'
-import { formatCurrency } from '@/lib/currency'
 import {
   MessageSquare,
   UserPlus,
-  DollarSign,
+  CalendarClock,
   Send,
 } from 'lucide-react'
 
 import {
   loadActivity,
+  loadAppointmentsDonut,
   loadConversationsSeries,
   loadMetrics,
-  loadPipelineDonut,
   loadResponseTime,
 } from '@/lib/dashboard/queries'
 import type {
   ActivityItem,
+  AppointmentsDonutData,
   ConversationsSeriesPoint,
   MetricsBundle,
-  PipelineDonutData,
   ResponseTimeSummary,
 } from '@/lib/dashboard/types'
 
@@ -30,7 +29,7 @@ import { MetricCard } from '@/components/dashboard/metric-card'
 import { SkeletonCard } from '@/components/dashboard/skeleton'
 import { QuickActions } from '@/components/dashboard/quick-actions'
 import { ConversationsChart } from '@/components/dashboard/conversations-chart'
-import { PipelineDonut } from '@/components/dashboard/pipeline-donut'
+import { AppointmentsDonut } from '@/components/dashboard/appointments-donut'
 import { ResponseTimeChart } from '@/components/dashboard/response-time-chart'
 import { ActivityFeed } from '@/components/dashboard/activity-feed'
 
@@ -40,7 +39,8 @@ type RangeDays = 7 | 30 | 90
 
 export default function DashboardPage() {
   const t = useTranslations('Dashboard.page')
-  const { defaultCurrency } = useAuth()
+  const { account } = useAuth()
+  const timezone = account?.timezone ?? 'Africa/Maputo'
   const [metrics, setMetrics] = useState<MetricsBundle | null>(null)
   const [metricsLoading, setMetricsLoading] = useState(true)
 
@@ -55,8 +55,8 @@ export default function DashboardPage() {
   })
   const [seriesLoading, setSeriesLoading] = useState(true)
 
-  const [pipeline, setPipeline] = useState<PipelineDonutData | null>(null)
-  const [pipelineLoading, setPipelineLoading] = useState(true)
+  const [appointments, setAppointments] = useState<AppointmentsDonutData | null>(null)
+  const [appointmentsLoading, setAppointmentsLoading] = useState(true)
 
   const [responseTime, setResponseTime] = useState<ResponseTimeSummary | null>(null)
   const [responseTimeLoading, setResponseTimeLoading] = useState(true)
@@ -70,7 +70,7 @@ export default function DashboardPage() {
     // Kick everything off in parallel. Each block has its own
     // setState + finally so a slow query doesn't hold up faster
     // sections — each widget shows its own skeleton independently.
-    void loadMetrics(db)
+    void loadMetrics(db, timezone)
       .then((m) => setMetrics(m))
       .catch((err) => console.error('[dashboard] metrics failed:', err))
       .finally(() => setMetricsLoading(false))
@@ -80,10 +80,10 @@ export default function DashboardPage() {
       .catch((err) => console.error('[dashboard] series failed:', err))
       .finally(() => setSeriesLoading(false))
 
-    void loadPipelineDonut(db)
-      .then((p) => setPipeline(p))
-      .catch((err) => console.error('[dashboard] pipeline failed:', err))
-      .finally(() => setPipelineLoading(false))
+    void loadAppointmentsDonut(db, timezone)
+      .then((p) => setAppointments(p))
+      .catch((err) => console.error('[dashboard] appointments donut failed:', err))
+      .finally(() => setAppointmentsLoading(false))
 
     void loadResponseTime(db)
       .then((r) => setResponseTime(r))
@@ -97,7 +97,7 @@ export default function DashboardPage() {
       .then((a) => setActivity(a))
       .catch((err) => console.error('[dashboard] activity failed:', err))
       .finally(() => setActivityLoading(false))
-  }, [])
+  }, [timezone])
 
   useEffect(() => {
     loadAll()
@@ -165,10 +165,14 @@ export default function DashboardPage() {
               }}
             />
             <MetricCard
-              title={t('openDealsValue')}
-              value={formatCurrency(metrics.openDealsValue, defaultCurrency)}
-              icon={DollarSign}
-              subtitle={t('openDeals', { count: metrics.openDealsCount })}
+              title={t('appointmentsToday')}
+              value={metrics.appointmentsToday.toLocaleString()}
+              icon={CalendarClock}
+              subtitle={
+                metrics.noShowRate30d === null
+                  ? undefined
+                  : t('noShowRate', { rate: metrics.noShowRate30d })
+              }
             />
             <MetricCard
               title={t('messagesSentToday')}
@@ -196,7 +200,7 @@ export default function DashboardPage() {
           match the tallest sibling; adding h-full on each wrapper and
           on the inner panels makes both cards actually fill that
           stretched height so their rounded borders line up. Without
-          this, the pipeline card rendered at its natural (shorter)
+          this, the donut card rendered at its natural (shorter)
           height while the line chart drove the row height. */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
         <div className="h-full lg:col-span-3">
@@ -208,10 +212,9 @@ export default function DashboardPage() {
           />
         </div>
         <div className="h-full lg:col-span-2">
-          <PipelineDonut
-            data={pipeline}
-            loading={pipelineLoading}
-            currency={defaultCurrency}
+          <AppointmentsDonut
+            data={appointments}
+            loading={appointmentsLoading}
           />
         </div>
       </div>

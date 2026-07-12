@@ -72,8 +72,9 @@
     "dashboard": "Painel",
     "inbox": "Caixa de entrada",
     "agenda": "Agenda",
+    "clinica": "Sobre a clínica",
     "notifications": "Notificações",
-    "contacts": "Contactos",
+    "contacts": "Pacientes",
     "pipelines": "Funis",
     "broadcasts": "Campanhas",
     "automations": "Automações",
@@ -98,8 +99,9 @@
     "dashboard": "Painel",
     "inbox": "Caixa de entrada",
     "agenda": "Agenda",
+    "clinica": "Sobre a clínica",
     "notifications": "Notificações",
-    "contacts": "Contactos",
+    "contacts": "Pacientes",
     "pipelines": "Funis",
     "broadcasts": "Campanhas",
     "automations": "Automações",
@@ -122,10 +124,12 @@
       "activeConversations": "Conversas ativas",
       "newContactsToday": "Novos contactos hoje",
       "openDealsValue": "Valor de negócios em aberto",
+      "appointmentsToday": "Consultas hoje",
       "messagesSentToday": "Mensagens enviadas hoje",
       "newTodayVsYesterday": "novos hoje face a ontem",
       "vsYesterday": "face a ontem",
       "openDeals": "{count} {count, plural, =1 {negócio em aberto} other {negócios em aberto}}",
+      "noShowRate": "{rate}% de faltas (30d)",
       "noChange": "Sem alteração {suffix}"
     },
     "quickActions": {
@@ -166,6 +170,22 @@
       "dealCount": "{count} {count, plural, =1 {negócio} other {negócios}}",
       "total": "Total",
       "ariaLabel": "Valor do funil por fase"
+    },
+    "appointmentsDonut": {
+      "title": "Consultas de hoje",
+      "description": "Consultas de hoje por estado",
+      "noAppointments": "Ainda sem consultas hoje",
+      "noAppointmentsHint": "As consultas marcadas pelo bot do WhatsApp ou adicionadas manualmente na Agenda aparecem aqui.",
+      "count": "{count} {count, plural, =1 {consulta} other {consultas}}",
+      "total": "Total",
+      "ariaLabel": "Consultas de hoje por estado",
+      "status": {
+        "pendente": "Pendente",
+        "confirmado": "Confirmado",
+        "concluido": "Concluído",
+        "falta": "Falta",
+        "cancelado": "Cancelado"
+      }
     },
     "responseTimeChart": {
       "title": "Tempo médio de primeira resposta",
@@ -331,9 +351,9 @@
   },
   "Contacts": {
     "page": {
-      "title": "Contactos",
-      "subtitle": "Faça a gestão da sua lista de contactos. {count} contactos no total.",
-      "subtitleZero": "Faça a gestão da sua lista de contactos.",
+      "title": "Pacientes",
+      "subtitle": "Faça a gestão da sua lista de pacientes. {count} pacientes no total.",
+      "subtitleZero": "Faça a gestão da sua lista de pacientes.",
       "customFieldsBtn": "Campos personalizados",
       "importBtn": "Importar",
       "addContactBtn": "Adicionar contacto",
@@ -413,6 +433,7 @@
         "notes": "Notas",
         "custom": "Campos personalizados",
         "deals": "Negócios",
+        "agendamentos": "Consultas",
         "noTags": "Sem etiquetas",
         "noDeals": "Sem negócios",
         "addNotePlaceholder": "Adicionar uma nota..."
@@ -445,6 +466,16 @@
       },
       "dealsTab": {
         "noDeals": "Ainda sem negócios"
+      },
+      "agendamentosTab": {
+        "noAgendamentos": "Ainda sem consultas para este paciente.",
+        "status": {
+          "pendente": "Pendente",
+          "confirmado": "Confirmado",
+          "concluido": "Concluído",
+          "falta": "Falta",
+          "cancelado": "Cancelado"
+        }
       },
       "tagsTab": {
         "clickTagDesc": "Clique numa etiqueta para a adicionar ou remover deste contacto.",
@@ -2007,5 +2038,32 @@
       "nextWeek": "Semana seguinte",
       "thisWeek": "Esta semana"
     }
+  },
+  "Clinica": {
+    "pageTitle": "Sobre a clínica",
+    "pageDesc": "Morada, horário, especialidades e equipa — o que pacientes e a equipa precisam de saber.",
+    "infoTitle": "Informação da clínica",
+    "infoDesc": "Visível a qualquer pessoa com acesso a esta conta. Os administradores podem editar abaixo.",
+    "emptyReadOnly": "A clínica ainda não preencheu os seus dados.",
+    "addressLabel": "Morada",
+    "addressPlaceholder": "Rua, bairro, cidade",
+    "hoursLabel": "Horário de funcionamento",
+    "hoursPlaceholder": "por exemplo, Seg–Sex 08:00–18:00, Sáb 08:00–12:00",
+    "contactLabel": "Contacto",
+    "contactHint": "contacte através do número de WhatsApp ligado em Definições → WhatsApp",
+    "descriptionLabel": "Sobre",
+    "descriptionPlaceholder": "Uma breve descrição da clínica para os pacientes",
+    "notSet": "Ainda não definido.",
+    "save": "Guardar",
+    "saving": "A guardar…",
+    "saved": "Informação da clínica guardada",
+    "saveFailed": "Falha ao guardar: {message}",
+    "specialtiesTitle": "Especialidades",
+    "specialtiesDesc": "Faça a gestão da lista em Definições → Agenda.",
+    "noSpecialties": "Ainda sem especialidades listadas.",
+    "teamTitle": "Equipa",
+    "teamDesc": "Faça a gestão dos profissionais em Definições → Agenda.",
+    "noTeam": "Ainda sem profissionais listados.",
+    "loading": "A carregar…"
   }
 }

@@ -21,12 +21,16 @@ interface Profissional {
   nome: string;
 }
 
-interface Row {
+interface RawRow {
   id: string;
   inicio: string;
   fim: string;
   status: string;
-  contacts: { name: string | null; phone: string } | null;
+  contact_id: string;
+}
+
+interface Row extends RawRow {
+  contactName: string | null;
 }
 
 const STATUS_DOT: Record<string, string> = {
@@ -79,15 +83,32 @@ export function WeeklyCalendar() {
   const fetchWeek = useCallback(async () => {
     if (!selectedProf || days.length === 0) return;
     setLoading(true);
-    const { data } = await supabase
+    const { data: raw } = await supabase
       .from("agendamentos")
-      .select("id, inicio, fim, status, contacts(name, phone)")
+      .select("id, inicio, fim, status, contact_id")
       .eq("profissional_id", selectedProf)
       .neq("status", "cancelado")
       .gte("inicio", days[0].start.toISOString())
       .lt("inicio", days[6].end.toISOString())
       .order("inicio");
-    setRows((data as unknown as Row[] | null) ?? []);
+
+    const list = (raw as RawRow[] | null) ?? [];
+    if (list.length === 0) {
+      setRows([]);
+      setLoading(false);
+      return;
+    }
+
+    // Flat second query + client-side join — see AppointmentKanban for
+    // why nested embeds are avoided for this exact relation.
+    const contactIds = [...new Set(list.map((r) => r.contact_id))];
+    const { data: contacts } = await supabase
+      .from("contacts")
+      .select("id, name, phone")
+      .in("id", contactIds);
+    const contactMap = new Map((contacts ?? []).map((c) => [c.id, c.name ?? c.phone]));
+
+    setRows(list.map((r) => ({ ...r, contactName: contactMap.get(r.contact_id) ?? null })));
     setLoading(false);
   }, [supabase, selectedProf, days]);
 
@@ -193,7 +214,7 @@ export function WeeklyCalendar() {
                           {formatTimeLabel(new Date(row.inicio), timezone)}
                         </div>
                         <p className="mt-0.5 truncate text-foreground">
-                          {row.contacts?.name ?? row.contacts?.phone ?? "—"}
+                          {row.contactName ?? "—"}
                         </p>
                       </li>
                     ))}

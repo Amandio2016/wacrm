@@ -7,8 +7,12 @@ import {
   mondayIndex,
   startOfLocalDay,
 } from './date-utils'
+import { localDayRangeUtc } from '@/lib/appointments/format'
 import type {
   ActivityItem,
+  AgendamentoStatus,
+  AppointmentsDonutData,
+  AppointmentStatusSlice,
   ConversationsSeriesPoint,
   MetricsBundle,
   PipelineDonutData,
@@ -16,6 +20,16 @@ import type {
   ResponseTimeBucket,
   ResponseTimeSummary,
 } from './types'
+
+/** Same palette as the Agenda Kanban's status columns — one status
+ *  vocabulary, one set of colours, everywhere it appears. */
+const AGENDAMENTO_STATUS_COLOR: Record<AgendamentoStatus, string> = {
+  pendente: '#f59e0b',
+  confirmado: '#3b82f6',
+  concluido: '#22c55e',
+  falta: '#ef4444',
+  cancelado: '#6b7280',
+}
 
 // ------------------------------------------------------------
 // All client-side aggregation. RLS scopes every query to the
@@ -29,9 +43,18 @@ type DB = SupabaseClient
 
 // --- 1. Metric cards ---------------------------------------------------
 
-export async function loadMetrics(db: DB): Promise<MetricsBundle> {
+export async function loadMetrics(db: DB, clinicTimezone: string): Promise<MetricsBundle> {
   const todayStart = startOfLocalDay().toISOString()
   const yesterdayStart = daysAgoStart(1).toISOString()
+
+  // "Today" for appointments is the clinic's own calendar day, not the
+  // viewing browser's — must match what the Agenda Kanban shows for
+  // "hoje", or the same day would report two different counts.
+  const { start: clinicTodayStart, end: clinicTodayEnd } = localDayRangeUtc(
+    new Date(),
+    clinicTimezone,
+  )
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 86_400_000).toISOString()
 
   const [
     openConvCur,
@@ -42,6 +65,8 @@ export async function loadMetrics(db: DB): Promise<MetricsBundle> {
     openDeals,
     messagesToday,
     messagesYesterday,
+    appointmentsTodayRes,
+    noShowRows,
   ] = await Promise.all([
     db.from('conversations').select('id', { count: 'exact', head: true }).eq('status', 'open'),
     db
@@ -73,10 +98,29 @@ export async function loadMetrics(db: DB): Promise<MetricsBundle> {
       .eq('sender_type', 'agent')
       .gte('created_at', yesterdayStart)
       .lt('created_at', todayStart),
+    db
+      .from('agendamentos')
+      .select('id', { count: 'exact', head: true })
+      .gte('inicio', clinicTodayStart.toISOString())
+      .lt('inicio', clinicTodayEnd.toISOString())
+      .neq('status', 'cancelado'),
+    db
+      .from('agendamentos')
+      .select('status')
+      .in('status', ['concluido', 'falta'])
+      .gte('inicio', thirtyDaysAgo),
   ])
 
   const openDealsRows = (openDeals.data ?? []) as { value: number | null }[]
   const openDealsValue = openDealsRows.reduce((sum, d) => sum + (d.value ?? 0), 0)
+
+  const noShowSample = (noShowRows.data ?? []) as { status: string }[]
+  const noShowRate30d =
+    noShowSample.length === 0
+      ? null
+      : Math.round(
+          (noShowSample.filter((r) => r.status === 'falta').length / noShowSample.length) * 100,
+        )
 
   return {
     activeConversations: {
@@ -96,6 +140,8 @@ export async function loadMetrics(db: DB): Promise<MetricsBundle> {
       current: messagesToday.count ?? 0,
       previous: messagesYesterday.count ?? 0,
     },
+    appointmentsToday: appointmentsTodayRes.count ?? 0,
+    noShowRate30d,
   }
 }
 
@@ -165,6 +211,39 @@ export async function loadPipelineDonut(db: DB): Promise<PipelineDonutData> {
     stages: slices,
     totalValue: slices.reduce((sum, s) => sum + s.totalValue, 0),
   }
+}
+
+// --- 3b. Today's appointments by status --------------------------------
+//
+// The clinic-relevant replacement for the Pipeline donut: today's
+// appointments (clinic-local day) broken down by status, same 5
+// statuses/colours as the Agenda Kanban.
+
+export async function loadAppointmentsDonut(
+  db: DB,
+  clinicTimezone: string,
+): Promise<AppointmentsDonutData> {
+  const { start, end } = localDayRangeUtc(new Date(), clinicTimezone)
+  const { data } = await db
+    .from('agendamentos')
+    .select('status')
+    .gte('inicio', start.toISOString())
+    .lt('inicio', end.toISOString())
+
+  const rows = (data ?? []) as { status: AgendamentoStatus }[]
+  const counts = new Map<AgendamentoStatus, number>()
+  for (const r of rows) counts.set(r.status, (counts.get(r.status) ?? 0) + 1)
+
+  const order: AgendamentoStatus[] = ['pendente', 'confirmado', 'concluido', 'falta', 'cancelado']
+  const slices: AppointmentStatusSlice[] = order
+    .map((status) => ({
+      status,
+      color: AGENDAMENTO_STATUS_COLOR[status],
+      count: counts.get(status) ?? 0,
+    }))
+    .filter((s) => s.count > 0)
+
+  return { slices, total: rows.length }
 }
 
 // --- 4. Response time by day of week ----------------------------------

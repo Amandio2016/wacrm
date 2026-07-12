@@ -55,6 +55,11 @@ interface AccountSummary {
    *  DEFAULT 'Africa/Maputo' in the DB. Drives every appointment-
    *  scheduling date/time computation (lib/appointments/*). */
   timezone: string;
+  /** Institutional info shown on the "Sobre a Clínica" page (043).
+   *  All free-text, all nullable — a fresh account has none of this. */
+  morada: string | null;
+  horario_funcionamento: string | null;
+  descricao: string | null;
 }
 
 interface AuthContextValue {
@@ -182,10 +187,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const { data: account, error: accountErr } = await supabase
             .from("accounts")
             // default_currency added in migration 021; logo_url /
-            // brand_name in 038; cor_primaria / timezone in 041.
+            // brand_name in 038; cor_primaria / timezone in 041;
+            // morada / horario_funcionamento / descricao in 043.
             // Narrowed below so older schemas that read null still
             // resolve an account.
-            .select("id, name, default_currency, logo_url, brand_name, cor_primaria, timezone")
+            .select(
+              "id, name, default_currency, logo_url, brand_name, cor_primaria, timezone, morada, horario_funcionamento, descricao",
+            )
             .eq("id", data.account_id)
             .maybeSingle();
           if (accountErr) {
@@ -204,6 +212,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               brand_name: account.brand_name ?? null,
               cor_primaria: account.cor_primaria ?? null,
               timezone: account.timezone ?? "Africa/Maputo",
+              morada: account.morada ?? null,
+              horario_funcionamento: account.horario_funcionamento ?? null,
+              descricao: account.descricao ?? null,
             };
           }
         }

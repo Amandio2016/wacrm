@@ -32,14 +32,20 @@ const STATUSES: { id: Status; color: string }[] = [
   { id: "cancelado", color: "#6b7280" },
 ];
 
-interface Row {
+interface RawRow {
   id: string;
   inicio: string;
   fim: string;
   status: Status;
-  contacts: { name: string | null; phone: string } | null;
-  profissionais: { nome: string } | null;
-  especialidades: { nome: string } | null;
+  contact_id: string;
+  profissional_id: string;
+  especialidade_id: string | null;
+}
+
+interface Row extends RawRow {
+  contactName: string | null;
+  profissionalNome: string | null;
+  especialidadeNome: string | null;
 }
 
 /**
@@ -51,6 +57,13 @@ interface Row {
  * "Hoje" é o dia calendário na TIMEZONE DA CLÍNICA, não do browser do
  * agente — um agente a trabalhar de outro fuso vê o mesmo conjunto que
  * a receção física veria.
+ *
+ * Names (contact/professional/specialty) are resolved via SEPARATE flat
+ * queries joined client-side by id, not a nested PostgREST embed. This
+ * codebase has a documented history of embedded-FK lookups going stale
+ * or ambiguous on the schema cache (see use-auth.tsx's account fetch);
+ * for the one screen reception stares at all day, the extra round trip
+ * is worth never showing a blank name.
  */
 export function AppointmentKanban() {
   const t = useTranslations("Agenda.kanban");
@@ -66,15 +79,44 @@ export function AppointmentKanban() {
     if (!accountId) return;
     setLoading(true);
     const { start, end } = localDayRangeUtc(new Date(), timezone);
-    const { data } = await supabase
+    const { data: raw } = await supabase
       .from("agendamentos")
-      .select(
-        "id, inicio, fim, status, contacts(name, phone), profissionais(nome), especialidades(nome)",
-      )
+      .select("id, inicio, fim, status, contact_id, profissional_id, especialidade_id")
       .gte("inicio", start.toISOString())
       .lt("inicio", end.toISOString())
       .order("inicio");
-    setRows((data as unknown as Row[] | null) ?? []);
+
+    const list = (raw as RawRow[] | null) ?? [];
+    if (list.length === 0) {
+      setRows([]);
+      setLoading(false);
+      return;
+    }
+
+    const contactIds = [...new Set(list.map((r) => r.contact_id))];
+    const profIds = [...new Set(list.map((r) => r.profissional_id))];
+    const espIds = [...new Set(list.map((r) => r.especialidade_id).filter((v): v is string => !!v))];
+
+    const [{ data: contacts }, { data: profs }, { data: esps }] = await Promise.all([
+      supabase.from("contacts").select("id, name, phone").in("id", contactIds),
+      supabase.from("profissionais").select("id, nome").in("id", profIds),
+      espIds.length
+        ? supabase.from("especialidades").select("id, nome").in("id", espIds)
+        : Promise.resolve({ data: [] as { id: string; nome: string }[] }),
+    ]);
+
+    const contactMap = new Map((contacts ?? []).map((c) => [c.id, c.name ?? c.phone]));
+    const profMap = new Map((profs ?? []).map((p) => [p.id, p.nome]));
+    const espMap = new Map((esps ?? []).map((e) => [e.id, e.nome]));
+
+    setRows(
+      list.map((r) => ({
+        ...r,
+        contactName: contactMap.get(r.contact_id) ?? null,
+        profissionalNome: profMap.get(r.profissional_id) ?? null,
+        especialidadeNome: r.especialidade_id ? (espMap.get(r.especialidade_id) ?? null) : null,
+      })),
+    );
     setLoading(false);
   }, [supabase, accountId, timezone]);
 
@@ -148,7 +190,10 @@ export function AppointmentKanban() {
         onDragEnd={handleDragEnd}
         onDragCancel={() => setActiveId(null)}
       >
-        <div className="flex gap-3 overflow-x-auto pb-4">
+        {/* snap-x/snap-mandatory + themed scrollbar mirrors the
+            Pipelines board (pipeline-board.tsx) — one board pattern
+            across the whole app, mobile swipe included. */}
+        <div className="kanban-scroll flex snap-x snap-mandatory gap-3 overflow-x-auto pb-4 lg:snap-none">
           {STATUSES.map((s) => (
             <StatusColumn
               key={s.id}
@@ -170,6 +215,40 @@ export function AppointmentKanban() {
           ) : null}
         </DragOverlay>
       </DndContext>
+
+      <style jsx>{`
+        .kanban-scroll {
+          scroll-behavior: smooth;
+        }
+        @media (hover: none), (pointer: coarse) {
+          .kanban-scroll::-webkit-scrollbar {
+            height: 0;
+            display: none;
+          }
+          .kanban-scroll {
+            scrollbar-width: none;
+          }
+        }
+        @media (hover: hover) and (pointer: fine) {
+          .kanban-scroll {
+            scrollbar-width: thin;
+            scrollbar-color: var(--border) transparent;
+          }
+          .kanban-scroll::-webkit-scrollbar {
+            height: 8px;
+          }
+          .kanban-scroll::-webkit-scrollbar-track {
+            background: transparent;
+          }
+          .kanban-scroll::-webkit-scrollbar-thumb {
+            background-color: var(--border);
+            border-radius: 9999px;
+          }
+          .kanban-scroll::-webkit-scrollbar-thumb:hover {
+            background-color: var(--muted-foreground);
+          }
+        }
+      `}</style>
     </div>
   );
 }
@@ -192,7 +271,7 @@ function StatusColumn({
   const { setNodeRef, isOver } = useDroppable({ id: status });
 
   return (
-    <div className="flex w-[85vw] min-w-[240px] max-w-[300px] shrink-0 flex-col rounded-xl border border-border bg-card/60 p-3 lg:w-auto lg:max-w-none lg:flex-1 lg:basis-[240px]">
+    <div className="flex w-[85vw] min-w-[240px] max-w-[300px] shrink-0 snap-start flex-col rounded-xl border border-border bg-card/60 p-3 lg:w-auto lg:max-w-none lg:flex-1 lg:basis-[240px] lg:snap-none">
       <div className="-mx-3 -mt-3 h-[3px] rounded-t-xl" style={{ backgroundColor: color }} />
       <div className="flex items-center justify-between pt-3">
         <h3 className="text-sm font-semibold text-foreground">{label}</h3>
@@ -231,21 +310,19 @@ function DraggableCard({ row, timezone }: { row: Row; timezone: string }) {
 function AppointmentCard({ row, timezone }: { row: Row; timezone: string }) {
   return (
     <div className="cursor-grab rounded-lg border border-border bg-card p-2.5 active:cursor-grabbing">
-      <p className="truncate text-sm font-medium text-foreground">
-        {row.contacts?.name ?? row.contacts?.phone ?? "—"}
-      </p>
+      <p className="truncate text-sm font-medium text-foreground">{row.contactName ?? "—"}</p>
       <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
         <Clock className="size-3 shrink-0" />
         {formatTimeLabel(new Date(row.inicio), timezone)}
       </p>
-      {row.profissionais && (
+      {row.profissionalNome && (
         <p className="mt-0.5 flex items-center gap-1 truncate text-xs text-muted-foreground">
           <User className="size-3 shrink-0" />
-          {row.profissionais.nome}
+          {row.profissionalNome}
         </p>
       )}
-      {row.especialidades && (
-        <p className="mt-0.5 truncate text-xs text-muted-foreground">{row.especialidades.nome}</p>
+      {row.especialidadeNome && (
+        <p className="mt-0.5 truncate text-xs text-muted-foreground">{row.especialidadeNome}</p>
       )}
     </div>
   );

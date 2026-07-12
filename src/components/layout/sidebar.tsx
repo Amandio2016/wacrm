@@ -11,9 +11,9 @@ import { BrandMark } from "@/components/layout/brand-mark";
 import {
   Bell,
   Bot,
+  Building2,
   CalendarClock,
   Crown,
-  GitBranch,
   LayoutDashboard,
   LogOut,
   MessageSquare,
@@ -95,9 +95,14 @@ const navItems: NavItem[] = [
   { href: "/dashboard", labelKey: "dashboard", icon: LayoutDashboard },
   { href: "/inbox", labelKey: "inbox", icon: MessageSquare },
   { href: "/agenda", labelKey: "agenda", icon: CalendarClock },
+  { href: "/clinica", labelKey: "clinica", icon: Building2 },
   { href: "/notifications", labelKey: "notifications", icon: Bell },
   { href: "/contacts", labelKey: "contacts", icon: Users },
-  { href: "/pipelines", labelKey: "pipelines", icon: GitBranch },
+  // Pipelines (Funis) is a generic sales-CRM module with no clinical
+  // meaning for ClinBoost — hidden from nav, not deleted. The route,
+  // its data, and existing deals stay intact for any account that
+  // still relies on them; this only removes the entry point most
+  // clinics never need.
   { href: "/broadcasts", labelKey: "broadcasts", icon: Radio },
   { href: "/automations", labelKey: "automations", icon: Zap },
   { href: "/flows", labelKey: "flows", icon: Workflow, beta: true },

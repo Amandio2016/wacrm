@@ -3,9 +3,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/hooks/use-auth';
-import { formatCurrency } from '@/lib/currency';
 import { toast } from 'sonner';
-import type { Contact, Tag, ContactTag, ContactNote, CustomField, ContactCustomValue, Deal, MessageTemplate } from '@/types';
+import type { Contact, Tag, ContactTag, ContactNote, CustomField, ContactCustomValue, MessageTemplate } from '@/types';
+import { formatSlotLabel } from '@/lib/appointments/format';
 import {
   TemplatePicker,
   type TemplateSendValues,
@@ -36,10 +36,29 @@ import {
   Trash2,
   Save,
   X,
-  DollarSign,
+  CalendarClock,
+  Stethoscope,
   LayoutTemplate,
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+
+/** Same palette as the Agenda Kanban's status columns — one status
+ *  vocabulary, one set of colours, wherever it shows up in the app. */
+const AGENDAMENTO_STATUS_COLOR: Record<AgendamentoRow['status'], string> = {
+  pendente: '#f59e0b',
+  confirmado: '#3b82f6',
+  concluido: '#22c55e',
+  falta: '#ef4444',
+  cancelado: '#6b7280',
+};
+
+interface AgendamentoRow {
+  id: string;
+  inicio: string;
+  status: 'pendente' | 'confirmado' | 'cancelado' | 'concluido' | 'falta';
+  profissionalNome: string | null;
+  especialidadeNome: string | null;
+}
 
 interface ContactDetailViewProps {
   open: boolean;
@@ -56,7 +75,8 @@ export function ContactDetailView({
 }: ContactDetailViewProps) {
   const t = useTranslations('Contacts.detailView');
   const supabase = createClient();
-  const { accountId, defaultCurrency } = useAuth();
+  const { accountId, account } = useAuth();
+  const timezone = account?.timezone ?? 'Africa/Maputo';
 
   const [contact, setContact] = useState<Contact | null>(null);
   const [loading, setLoading] = useState(false);
@@ -92,9 +112,11 @@ export function ContactDetailView({
   const [savingCustom, setSavingCustom] = useState(false);
   const [loadingCustom, setLoadingCustom] = useState(false);
 
-  // Deals tab
-  const [deals, setDeals] = useState<Deal[]>([]);
-  const [loadingDeals, setLoadingDeals] = useState(false);
+  // Appointments tab (replaces the generic-CRM Deals tab — ClinBoost
+  // has no sales pipeline; this patient's clinical booking history is
+  // what matters here).
+  const [agendamentos, setAgendamentos] = useState<AgendamentoRow[]>([]);
+  const [loadingAgendamentos, setLoadingAgendamentos] = useState(false);
 
   const fetchContact = useCallback(async () => {
     if (!contactId) return;
@@ -167,16 +189,45 @@ export function ContactDetailView({
     setLoadingCustom(false);
   }, [contactId, supabase]);
 
-  const fetchDeals = useCallback(async () => {
+  const fetchAgendamentos = useCallback(async () => {
     if (!contactId) return;
-    setLoadingDeals(true);
-    const { data } = await supabase
-      .from('deals')
-      .select('*, stage:pipeline_stages(*)')
+    setLoadingAgendamentos(true);
+    const { data: raw } = await supabase
+      .from('agendamentos')
+      .select('id, inicio, status, profissional_id, especialidade_id')
       .eq('contact_id', contactId)
-      .order('created_at', { ascending: false });
-    setDeals((data ?? []) as Deal[]);
-    setLoadingDeals(false);
+      .order('inicio', { ascending: false });
+
+    const list = raw ?? [];
+    if (list.length === 0) {
+      setAgendamentos([]);
+      setLoadingAgendamentos(false);
+      return;
+    }
+
+    // Flat second query + client-side join, not a nested embed — see
+    // AppointmentKanban for why this relation is resolved this way.
+    const profIds = [...new Set(list.map((r) => r.profissional_id))];
+    const espIds = [...new Set(list.map((r) => r.especialidade_id).filter((v): v is string => !!v))];
+    const [{ data: profs }, { data: esps }] = await Promise.all([
+      supabase.from('profissionais').select('id, nome').in('id', profIds),
+      espIds.length
+        ? supabase.from('especialidades').select('id, nome').in('id', espIds)
+        : Promise.resolve({ data: [] as { id: string; nome: string }[] }),
+    ]);
+    const profMap = new Map((profs ?? []).map((p) => [p.id, p.nome]));
+    const espMap = new Map((esps ?? []).map((e) => [e.id, e.nome]));
+
+    setAgendamentos(
+      list.map((r) => ({
+        id: r.id,
+        inicio: r.inicio,
+        status: r.status,
+        profissionalNome: profMap.get(r.profissional_id) ?? null,
+        especialidadeNome: r.especialidade_id ? (espMap.get(r.especialidade_id) ?? null) : null,
+      })),
+    );
+    setLoadingAgendamentos(false);
   }, [contactId, supabase]);
 
   useEffect(() => {
@@ -185,9 +236,9 @@ export function ContactDetailView({
       fetchTags();
       fetchNotes();
       fetchCustomFields();
-      fetchDeals();
+      fetchAgendamentos();
     }
-  }, [open, contactId, fetchContact, fetchTags, fetchNotes, fetchCustomFields, fetchDeals]);
+  }, [open, contactId, fetchContact, fetchTags, fetchNotes, fetchCustomFields, fetchAgendamentos]);
 
   async function copyPhone() {
     if (!contact) return;
@@ -483,10 +534,10 @@ export function ContactDetailView({
                   {t('tabs.custom')}
                 </TabsTrigger>
                 <TabsTrigger
-                  value="deals"
+                  value="agendamentos"
                   className="data-active:bg-muted data-active:text-primary text-muted-foreground"
                 >
-                  {t('tabs.deals')}
+                  {t('tabs.agendamentos')}
                 </TabsTrigger>
               </TabsList>
 
@@ -695,56 +746,41 @@ export function ContactDetailView({
               </TabsContent>
 
               {/* Deals Tab */}
-              <TabsContent value="deals" className="flex-1 overflow-y-auto px-4 py-3">
-                {loadingDeals ? (
+              <TabsContent value="agendamentos" className="flex-1 overflow-y-auto px-4 py-3">
+                {loadingAgendamentos ? (
                   <div className="flex items-center justify-center py-8">
                     <Loader2 className="size-5 animate-spin text-primary" />
                   </div>
-                ) : deals.length === 0 ? (
-                  <p className="text-xs text-muted-foreground">{t('dealsTab.noDeals')}</p>
+                ) : agendamentos.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">{t('agendamentosTab.noAgendamentos')}</p>
                 ) : (
                   <div className="space-y-2">
-                    {deals.map((deal) => (
+                    {agendamentos.map((apt) => (
                       <div
-                        key={deal.id}
+                        key={apt.id}
                         className="rounded-lg border border-border bg-muted/50 p-3"
                       >
                         <div className="flex items-start justify-between gap-2">
-                          <p className="text-sm font-medium text-foreground">
-                            {deal.title}
+                          <p className="flex items-center gap-1.5 text-sm font-medium text-foreground">
+                            <CalendarClock className="size-3.5 shrink-0 text-muted-foreground" />
+                            {formatSlotLabel(new Date(apt.inicio), timezone)}
                           </p>
-                          {deal.stage && (
-                            <span
-                              className="shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium"
-                              style={{
-                                backgroundColor: `${deal.stage.color}20`,
-                                color: deal.stage.color,
-                              }}
-                            >
-                              {deal.stage.name}
-                            </span>
-                          )}
-                        </div>
-                        <div className="mt-1.5 flex items-center justify-between text-xs text-muted-foreground">
-                          <span className="flex items-center gap-1">
-                            <DollarSign className="size-3" />
-                            {formatCurrency(
-                              deal.value ?? 0,
-                              deal.currency || defaultCurrency,
-                            )}
+                          <span
+                            className="shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium"
+                            style={{
+                              backgroundColor: `${AGENDAMENTO_STATUS_COLOR[apt.status]}20`,
+                              color: AGENDAMENTO_STATUS_COLOR[apt.status],
+                            }}
+                          >
+                            {t(`agendamentosTab.status.${apt.status}`)}
                           </span>
-                          {deal.status && deal.status !== 'open' && (
-                            <span
-                              className={
-                                deal.status === 'won'
-                                  ? 'text-primary'
-                                  : 'text-red-400'
-                              }
-                            >
-                              {deal.status}
-                            </span>
-                          )}
                         </div>
+                        {(apt.profissionalNome || apt.especialidadeNome) && (
+                          <div className="mt-1.5 flex items-center gap-1 text-xs text-muted-foreground">
+                            <Stethoscope className="size-3 shrink-0" />
+                            {[apt.profissionalNome, apt.especialidadeNome].filter(Boolean).join(' · ')}
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
