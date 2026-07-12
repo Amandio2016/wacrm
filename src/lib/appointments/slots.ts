@@ -82,7 +82,7 @@ function tzOffsetMs(tz: string, at: Date): number {
 }
 
 /** Local calendar date + weekday of a UTC instant, in `tz`. */
-function localDateOf(tz: string, at: Date): { ymd: string; dow: number } {
+export function localDateOf(tz: string, at: Date): { ymd: string; dow: number } {
   const parts = new Intl.DateTimeFormat("en-CA", {
     timeZone: tz,
     year: "numeric",
@@ -107,7 +107,7 @@ function localDateOf(tz: string, at: Date): { ymd: string; dow: number } {
  * re-check the offset at the guess (handles DST transitions; a no-op
  * for fixed-offset zones).
  */
-function wallTimeToUtc(tz: string, ymd: string, hhmm: string): Date {
+export function wallTimeToUtc(tz: string, ymd: string, hhmm: string): Date {
   const [y, mo, d] = ymd.split("-").map(Number);
   const [h, mi] = hhmm.split(":").map(Number);
   const naive = Date.UTC(y, mo - 1, d, h, mi);

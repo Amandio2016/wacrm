@@ -5,6 +5,8 @@ import {
   formatSlotLabel,
   groupSlotsByDay,
   localDayKey,
+  localDayRangeUtc,
+  weekDaysRangeUtc,
 } from "./format";
 
 const TZ = "Africa/Maputo"; // UTC+2
@@ -29,6 +31,59 @@ describe("labels in clinic-local time", () => {
   it("an instant late in the UTC day belongs to the NEXT local day east of UTC", () => {
     // 23:00 UTC Monday = 01:00 local Tuesday in Maputo.
     expect(localDayKey(new Date("2026-07-13T23:00:00Z"), TZ)).toBe("2026-07-14");
+  });
+});
+
+describe("localDayRangeUtc", () => {
+  it("spans exactly 24h from clinic-local midnight to midnight", () => {
+    const { start, end } = localDayRangeUtc(MON_8AM, TZ);
+    // 00:00 local Monday = 22:00 UTC Sunday (UTC+2)
+    expect(start.toISOString()).toBe("2026-07-12T22:00:00.000Z");
+    expect(end.getTime() - start.getTime()).toBe(86_400_000);
+  });
+
+  it("contains the instant it was derived from", () => {
+    const { start, end } = localDayRangeUtc(MON_8AM, TZ);
+    expect(MON_8AM.getTime() >= start.getTime()).toBe(true);
+    expect(MON_8AM.getTime() < end.getTime()).toBe(true);
+  });
+
+  it("differs by the zone offset in a different timezone", () => {
+    const spEnd = localDayRangeUtc(MON_8AM, "America/Sao_Paulo").start;
+    const mzStart = localDayRangeUtc(MON_8AM, TZ).start;
+    expect(spEnd.getTime()).not.toBe(mzStart.getTime());
+  });
+});
+
+describe("weekDaysRangeUtc", () => {
+  it("returns 7 consecutive days", () => {
+    const days = weekDaysRangeUtc(MON_8AM, TZ);
+    expect(days).toHaveLength(7);
+    for (let i = 1; i < days.length; i++) {
+      expect(days[i].start.getTime()).toBe(days[i - 1].end.getTime());
+    }
+  });
+
+  it("starts on Monday regardless of which weekday `ref` falls on", () => {
+    // Thursday 16 Jul 2026, still the same week as MON_8AM (13 Jul).
+    const thursday = new Date("2026-07-16T10:00:00Z");
+    const daysFromMonday = weekDaysRangeUtc(MON_8AM, TZ);
+    const daysFromThursday = weekDaysRangeUtc(thursday, TZ);
+    expect(daysFromThursday[0].start.getTime()).toBe(daysFromMonday[0].start.getTime());
+  });
+
+  it("the reference instant falls within its own week's range", () => {
+    const days = weekDaysRangeUtc(MON_8AM, TZ);
+    expect(MON_8AM.getTime() >= days[0].start.getTime()).toBe(true);
+    expect(MON_8AM.getTime() < days[6].end.getTime()).toBe(true);
+  });
+
+  it("a Sunday reference still belongs to the week that started the prior Monday", () => {
+    // Sunday 19 Jul 2026 local — last day of the same week.
+    const sunday = new Date("2026-07-19T10:00:00Z");
+    const days = weekDaysRangeUtc(sunday, TZ);
+    const monday = weekDaysRangeUtc(MON_8AM, TZ);
+    expect(days[0].start.getTime()).toBe(monday[0].start.getTime());
   });
 });
 

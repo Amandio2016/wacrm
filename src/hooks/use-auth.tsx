@@ -48,6 +48,13 @@ interface AccountSummary {
   /** White-label product name (migration 038). Null = fall back to the
    *  translated app title. */
   brand_name: string | null;
+  /** White-label primary colour, "#rrggbb" (migration 041). Null =
+   *  fall back to the ordinary theme picker. */
+  cor_primaria: string | null;
+  /** IANA timezone the clinic operates in (migration 041). NOT NULL
+   *  DEFAULT 'Africa/Maputo' in the DB. Drives every appointment-
+   *  scheduling date/time computation (lib/appointments/*). */
+  timezone: string;
 }
 
 interface AuthContextValue {
@@ -175,9 +182,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const { data: account, error: accountErr } = await supabase
             .from("accounts")
             // default_currency added in migration 021; logo_url /
-            // brand_name in 038. Narrowed below so older schemas that
-            // read null still resolve an account.
-            .select("id, name, default_currency, logo_url, brand_name")
+            // brand_name in 038; cor_primaria / timezone in 041.
+            // Narrowed below so older schemas that read null still
+            // resolve an account.
+            .select("id, name, default_currency, logo_url, brand_name, cor_primaria, timezone")
             .eq("id", data.account_id)
             .maybeSingle();
           if (accountErr) {
@@ -194,6 +202,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               default_currency: account.default_currency ?? DEFAULT_CURRENCY,
               logo_url: account.logo_url ?? null,
               brand_name: account.brand_name ?? null,
+              cor_primaria: account.cor_primaria ?? null,
+              timezone: account.timezone ?? "Africa/Maputo",
             };
           }
         }

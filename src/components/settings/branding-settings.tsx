@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Upload, Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { isValidHex } from "@/lib/brand-color";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,6 +20,18 @@ import {
 
 const MAX_BYTES = 2 * 1024 * 1024; // must match the bucket's file_size_limit
 const ACCEPTED = ["image/png", "image/jpeg", "image/webp", "image/svg+xml"];
+
+/** A handful of clinic-appropriate starting points for the picker grid. */
+const COLOR_PRESETS = [
+  "#2563eb", // azul clínico
+  "#0d9488", // verde-azulado
+  "#16a34a", // verde saúde
+  "#7c3aed", // violeta
+  "#dc2626", // vermelho
+  "#ea580c", // laranja
+  "#0891b2", // ciano
+  "#4f46e5", // índigo
+];
 
 /**
  * White-label branding: the account's logo and product name.
@@ -35,10 +48,14 @@ export function BrandingSettings() {
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [brandName, setBrandName] = useState(account?.brand_name ?? "");
+  const [corPrimaria, setCorPrimaria] = useState(account?.cor_primaria ?? "");
   const [preview, setPreview] = useState<string | null>(null);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [removeLogo, setRemoveLogo] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  const trimmedColor = corPrimaria.trim();
+  const colorIsInvalid = trimmedColor.length > 0 && !isValidHex(trimmedColor);
 
   const currentLogo = removeLogo ? null : (preview ?? account?.logo_url ?? null);
 
@@ -62,6 +79,10 @@ export function BrandingSettings() {
 
   const handleSave = async () => {
     if (!account?.id) return;
+    if (colorIsInvalid) {
+      toast.error(t("invalidColor"));
+      return;
+    }
     setSaving(true);
 
     try {
@@ -96,6 +117,7 @@ export function BrandingSettings() {
         .update({
           logo_url: nextLogoUrl,
           brand_name: brandName.trim() || null,
+          cor_primaria: trimmedColor || null,
         })
         .eq("id", account.id);
 
@@ -208,10 +230,68 @@ export function BrandingSettings() {
           <p className="text-xs text-muted-foreground">{t("brandNameHint")}</p>
         </div>
 
+        <div className="flex flex-col gap-2">
+          <Label className="text-muted-foreground">{t("colorLabel")}</Label>
+
+          <div className="flex flex-wrap items-center gap-2">
+            {COLOR_PRESETS.map((hex) => (
+              <button
+                key={hex}
+                type="button"
+                title={hex}
+                disabled={!canEditSettings || saving}
+                onClick={() => setCorPrimaria(hex)}
+                className="h-8 w-8 shrink-0 rounded-full border-2 transition"
+                style={{
+                  backgroundColor: hex,
+                  borderColor:
+                    trimmedColor.toLowerCase() === hex ? "var(--foreground)" : "transparent",
+                }}
+                aria-label={t("useColor", { color: hex })}
+              />
+            ))}
+
+            <input
+              type="color"
+              value={isValidHex(trimmedColor) ? trimmedColor : "#2563eb"}
+              disabled={!canEditSettings || saving}
+              onChange={(e) => setCorPrimaria(e.target.value)}
+              className="h-8 w-8 shrink-0 cursor-pointer rounded-full border border-border bg-transparent p-0"
+              aria-label={t("customColor")}
+            />
+
+            <Input
+              value={corPrimaria}
+              disabled={!canEditSettings || saving}
+              onChange={(e) => setCorPrimaria(e.target.value)}
+              placeholder="#2563eb"
+              className="w-32 border-border bg-muted font-mono text-foreground"
+            />
+
+            {trimmedColor && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={!canEditSettings || saving}
+                onClick={() => setCorPrimaria("")}
+                className="border-border text-muted-foreground"
+              >
+                {t("resetColor")}
+              </Button>
+            )}
+          </div>
+
+          {colorIsInvalid && (
+            <p className="text-xs text-red-400">{t("invalidColor")}</p>
+          )}
+          <p className="text-xs text-muted-foreground">{t("colorHint")}</p>
+        </div>
+
         <div>
           <Button
             onClick={handleSave}
-            disabled={!canEditSettings || saving}
+            disabled={!canEditSettings || saving || colorIsInvalid}
             className="bg-primary text-primary-foreground hover:bg-primary/90"
           >
             {saving ? t("saving") : t("save")}

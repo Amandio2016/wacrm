@@ -71,6 +71,7 @@
     "title": "CRM Template for WhatsApp",
     "dashboard": "Dashboard",
     "inbox": "Inbox",
+    "agenda": "Agenda",
     "notifications": "Notifications",
     "contacts": "Contacts",
     "pipelines": "Pipelines",
@@ -96,6 +97,7 @@
   "Header": {
     "dashboard": "Dashboard",
     "inbox": "Inbox",
+    "agenda": "Agenda",
     "notifications": "Notifications",
     "contacts": "Contacts",
     "pipelines": "Pipelines",
@@ -1556,6 +1558,7 @@
       "fields": "Fields & tags",
       "deals": "Deals & currency",
       "branding": "Branding",
+      "agenda": "Agenda",
       "members": "Team members",
       "billing": "Subscription",
       "api": "API keys"
@@ -1697,7 +1700,74 @@
       "saved": "Branding saved",
       "saveFailed": "Failed to save: {message}",
       "unsupportedImage": "Use a PNG, JPG, WebP, or SVG file.",
-      "imageTooLarge": "The logo must be 2 MB or smaller."
+      "imageTooLarge": "The logo must be 2 MB or smaller.",
+      "colorLabel": "Primary colour",
+      "colorHint": "Used across buttons, links, and highlights throughout the app for your account.",
+      "useColor": "Use {color}",
+      "customColor": "Pick a custom colour",
+      "resetColor": "Reset to default",
+      "invalidColor": "Enter a valid colour, e.g. #2563eb."
+    },
+    "agenda": {
+      "title": "Agenda",
+      "description": "Specialties, professionals, and weekly availability — what the WhatsApp booking bot reads at every step.",
+      "especialidades": {
+        "title": "Specialties",
+        "description": "Optional grouping the bot offers before picking a professional. Leave empty to skip straight to professionals.",
+        "placeholder": "e.g. Pediatrics",
+        "loading": "Loading…",
+        "empty": "No specialties yet.",
+        "toggleAria": "Toggle {name} active",
+        "deleteAria": "Delete {name}",
+        "toastDuplicate": "A specialty named \"{name}\" already exists.",
+        "toastCreateFailed": "Could not create the specialty.",
+        "toastCreated": "\"{name}\" created.",
+        "toastUpdateFailed": "Could not update the specialty.",
+        "toastDeleteFailed": "Could not delete the specialty.",
+        "toastDeleted": "\"{name}\" deleted."
+      },
+      "profissionais": {
+        "title": "Professionals",
+        "description": "Doctors the bot can book. Expand a row to set weekly availability.",
+        "nameLabel": "Name",
+        "namePlaceholder": "e.g. Dr. Ana Macamo",
+        "especialidadeLabel": "Specialty",
+        "especialidadeNone": "None",
+        "durationLabel": "Slot (min)",
+        "add": "Add",
+        "loading": "Loading…",
+        "empty": "No professionals yet.",
+        "noSpecialty": "No specialty",
+        "minutesShort": "{n} min",
+        "toggleAria": "Toggle {name} active",
+        "deleteAria": "Delete {name}",
+        "deleteConfirm": "Delete {name}? This is only possible if they have no appointment history — otherwise deactivate instead.",
+        "toastCreateFailed": "Could not create the professional.",
+        "toastCreated": "\"{name}\" created.",
+        "toastUpdateFailed": "Could not update the professional.",
+        "toastDeleteBlocked": "Can't delete — this professional has appointment history. Deactivate instead."
+      },
+      "disponibilidade": {
+        "title": "Weekly availability",
+        "loading": "Loading…",
+        "empty": "No availability set — the bot won't offer this professional any slots.",
+        "dayLabel": "Day",
+        "fromLabel": "From",
+        "toLabel": "To",
+        "addWindow": "Add",
+        "toastInvalidRange": "The end time must be after the start time.",
+        "toastCreateFailed": "Could not save this window.",
+        "toastDeleteFailed": "Could not remove this window.",
+        "dias": {
+          "seg": "Mon",
+          "ter": "Tue",
+          "qua": "Wed",
+          "qui": "Thu",
+          "sex": "Fri",
+          "sab": "Sat",
+          "dom": "Sun"
+        }
+      }
     },
     "billing": {
       "title": "Subscription",
@@ -1887,6 +1957,34 @@
       "pending": "Awaiting confirmation",
       "confirmed": "Confirmed",
       "rejected": "Rejected"
+    }
+  },
+  "Agenda": {
+    "pageTitle": "Agenda",
+    "pageDesc": "Today's appointments and the weekly schedule per professional.",
+    "tabToday": "Today",
+    "tabWeek": "Week",
+    "kanban": {
+      "loading": "Loading…",
+      "refresh": "Refresh",
+      "dropHere": "Drop here",
+      "toastMoveFailed": "Could not update the appointment status.",
+      "status": {
+        "pendente": "Pending",
+        "confirmado": "Confirmed",
+        "concluido": "Completed",
+        "falta": "No-show",
+        "cancelado": "Cancelled"
+      }
+    },
+    "calendar": {
+      "pickProfessional": "Pick a professional",
+      "noProfessionals": "No active professionals yet. Add one in Settings → Agenda.",
+      "loading": "Loading…",
+      "noAppointments": "No appointments",
+      "previousWeek": "Previous week",
+      "nextWeek": "Next week",
+      "thisWeek": "This week"
     }
   }
 }

@@ -71,6 +71,7 @@
     "title": "CRM para WhatsApp",
     "dashboard": "Painel",
     "inbox": "Caixa de entrada",
+    "agenda": "Agenda",
     "notifications": "Notificações",
     "contacts": "Contactos",
     "pipelines": "Funis",
@@ -96,6 +97,7 @@
   "Header": {
     "dashboard": "Painel",
     "inbox": "Caixa de entrada",
+    "agenda": "Agenda",
     "notifications": "Notificações",
     "contacts": "Contactos",
     "pipelines": "Funis",
@@ -1556,6 +1558,7 @@
       "fields": "Campos e etiquetas",
       "deals": "Negócios e moeda",
       "branding": "Marca",
+      "agenda": "Agenda",
       "members": "Membros da equipa",
       "billing": "Assinatura",
       "api": "Chaves de API"
@@ -1697,7 +1700,74 @@
       "saved": "Marca guardada",
       "saveFailed": "Falha ao guardar: {message}",
       "unsupportedImage": "Use um ficheiro PNG, JPG, WebP ou SVG.",
-      "imageTooLarge": "O logótipo tem de ter 2 MB ou menos."
+      "imageTooLarge": "O logótipo tem de ter 2 MB ou menos.",
+      "colorLabel": "Cor primária",
+      "colorHint": "Usada em botões, ligações e destaques em toda a aplicação, para a sua conta.",
+      "useColor": "Usar {color}",
+      "customColor": "Escolher uma cor personalizada",
+      "resetColor": "Repor predefinição",
+      "invalidColor": "Introduza uma cor válida, por exemplo #2563eb."
+    },
+    "agenda": {
+      "title": "Agenda",
+      "description": "Especialidades, profissionais e disponibilidade semanal — o que o bot de marcações do WhatsApp lê em cada passo.",
+      "especialidades": {
+        "title": "Especialidades",
+        "description": "Agrupamento opcional que o bot oferece antes de escolher o profissional. Deixe vazio para ir direto aos profissionais.",
+        "placeholder": "por exemplo, Pediatria",
+        "loading": "A carregar…",
+        "empty": "Ainda sem especialidades.",
+        "toggleAria": "Ativar/desativar {name}",
+        "deleteAria": "Eliminar {name}",
+        "toastDuplicate": "Já existe uma especialidade com o nome \"{name}\".",
+        "toastCreateFailed": "Não foi possível criar a especialidade.",
+        "toastCreated": "\"{name}\" criada.",
+        "toastUpdateFailed": "Não foi possível atualizar a especialidade.",
+        "toastDeleteFailed": "Não foi possível eliminar a especialidade.",
+        "toastDeleted": "\"{name}\" eliminada."
+      },
+      "profissionais": {
+        "title": "Profissionais",
+        "description": "Médicos que o bot pode marcar. Expanda uma linha para definir a disponibilidade semanal.",
+        "nameLabel": "Nome",
+        "namePlaceholder": "por exemplo, Dra. Ana Macamo",
+        "especialidadeLabel": "Especialidade",
+        "especialidadeNone": "Nenhuma",
+        "durationLabel": "Duração (min)",
+        "add": "Adicionar",
+        "loading": "A carregar…",
+        "empty": "Ainda sem profissionais.",
+        "noSpecialty": "Sem especialidade",
+        "minutesShort": "{n} min",
+        "toggleAria": "Ativar/desativar {name}",
+        "deleteAria": "Eliminar {name}",
+        "deleteConfirm": "Eliminar {name}? Só é possível se não tiver histórico de consultas — caso contrário, desative em vez disso.",
+        "toastCreateFailed": "Não foi possível criar o profissional.",
+        "toastCreated": "\"{name}\" criado.",
+        "toastUpdateFailed": "Não foi possível atualizar o profissional.",
+        "toastDeleteBlocked": "Não é possível eliminar — este profissional tem histórico de consultas. Desative em vez disso."
+      },
+      "disponibilidade": {
+        "title": "Disponibilidade semanal",
+        "loading": "A carregar…",
+        "empty": "Sem disponibilidade definida — o bot não vai oferecer vagas para este profissional.",
+        "dayLabel": "Dia",
+        "fromLabel": "Das",
+        "toLabel": "Às",
+        "addWindow": "Adicionar",
+        "toastInvalidRange": "A hora de fim tem de ser depois da hora de início.",
+        "toastCreateFailed": "Não foi possível guardar este horário.",
+        "toastDeleteFailed": "Não foi possível remover este horário.",
+        "dias": {
+          "seg": "Seg",
+          "ter": "Ter",
+          "qua": "Qua",
+          "qui": "Qui",
+          "sex": "Sex",
+          "sab": "Sáb",
+          "dom": "Dom"
+        }
+      }
     },
     "billing": {
       "title": "Assinatura",
@@ -1887,6 +1957,34 @@
       "pending": "A aguardar confirmação",
       "confirmed": "Confirmado",
       "rejected": "Rejeitado"
+    }
+  },
+  "Agenda": {
+    "pageTitle": "Agenda",
+    "pageDesc": "As consultas de hoje e a agenda semanal por profissional.",
+    "tabToday": "Hoje",
+    "tabWeek": "Semana",
+    "kanban": {
+      "loading": "A carregar…",
+      "refresh": "Atualizar",
+      "dropHere": "Largue aqui",
+      "toastMoveFailed": "Não foi possível atualizar o estado da consulta.",
+      "status": {
+        "pendente": "Pendente",
+        "confirmado": "Confirmado",
+        "concluido": "Concluído",
+        "falta": "Falta",
+        "cancelado": "Cancelado"
+      }
+    },
+    "calendar": {
+      "pickProfessional": "Escolha um profissional",
+      "noProfessionals": "Ainda sem profissionais ativos. Adicione um em Definições → Agenda.",
+      "loading": "A carregar…",
+      "noAppointments": "Sem consultas",
+      "previousWeek": "Semana anterior",
+      "nextWeek": "Semana seguinte",
+      "thisWeek": "Esta semana"
     }
   }
 }
