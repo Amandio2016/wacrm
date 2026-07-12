@@ -1,23 +1,31 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { sendTextMessage } from "@/lib/whatsapp/meta-api";
+import { sendTemplateMessage } from "@/lib/whatsapp/meta-api";
 import { decrypt } from "@/lib/whatsapp/encryption";
 import { formatSlotLabel } from "./format";
 
 /**
  * Internal reception alert — "consulta marcada/remarcada/cancelada".
  *
- * Sends a WhatsApp text from the clinic's own number to its
- * `numero_recepcao` on every appointment state change.
+ * Sent as the `alerta_agendamento` Utility template (pt_PT), approved
+ * by Meta, so it reaches the reception number regardless of whether a
+ * 24h service window is open — reception rarely messages the clinic's
+ * own bot, so relying on free-form text would silently drop most
+ * alerts. Body variables, in order (must match what was submitted to
+ * Meta):
  *
- * Honest limitation, documented in docs/clinboost-plan.md §2.1: Meta
- * only allows free-form text inside a 24h customer-service window. The
- * reception number rarely messages the clinic's bot, so this send WILL
- * be rejected once the window is closed — until the `alerta_agendamento`
- * Utility template is approved (Fase 4) and this switches to
- * sendTemplateMessage. Until then: best-effort send + loud log, and the
- * reception can keep the window open by messaging the clinic number
- * once a day. A failed alert never fails the booking itself.
+ *   {{1}} acao          — "marcada" | "remarcada" | "cancelada" | "confirmada"
+ *   {{2}} paciente       — nome do contacto (ou telefone, sem nome)
+ *   {{3}} contacto       — telefone do paciente
+ *   {{4}} profissional   — nome do médico
+ *   {{5}} especialidade  — nome da especialidade (ou "—")
+ *   {{6}} quando         — "seg, 13/07 às 08:00"
+ *
+ * A failed alert never fails the booking itself — this is a courtesy
+ * notification, not part of the transaction.
  */
+
+const TEMPLATE_NAME = "alerta_agendamento";
+const LANGUAGE = "pt_PT";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Db = SupabaseClient<any, any, any>;
@@ -71,24 +79,30 @@ export async function notifyReception(
       account.timezone ?? "Africa/Maputo",
     );
 
-    const linhas = [
-      `🔔 Consulta ${alert.acao}`,
-      `Paciente: ${contact?.name ?? contact?.phone ?? "—"}`,
-      contact?.phone ? `Contacto: ${contact.phone}` : null,
-      prof ? `Profissional: ${prof.nome}` : null,
-      esp ? `Especialidade: ${esp.nome}` : null,
-      `Quando: ${quando}`,
-    ].filter(Boolean);
-
-    await sendTextMessage({
+    await sendTemplateMessage({
       phoneNumberId: config.phone_number_id,
       accessToken: decrypt(config.access_token),
       to: account.numero_recepcao.replace(/[^\d+]/g, ""),
-      text: linhas.join("\n"),
+      templateName: TEMPLATE_NAME,
+      language: LANGUAGE,
+      components: [
+        {
+          type: "body",
+          parameters: [
+            { type: "text", text: alert.acao },
+            { type: "text", text: contact?.name ?? contact?.phone ?? "—" },
+            { type: "text", text: contact?.phone ?? "—" },
+            { type: "text", text: prof?.nome ?? "—" },
+            { type: "text", text: esp?.nome ?? "—" },
+            { type: "text", text: quando },
+          ],
+        },
+      ],
     });
   } catch (err) {
-    // Fora da janela de 24h (ver doc-comment) ou falha transitória.
-    // O agendamento em si já está persistido — nunca propagar.
+    // Template ainda não aprovado, número inválido, ou falha
+    // transitória. O agendamento em si já está persistido — nunca
+    // propagar o erro.
     console.warn(
       "[appointments/notify] reception alert failed:",
       alert.agendamentoId,
