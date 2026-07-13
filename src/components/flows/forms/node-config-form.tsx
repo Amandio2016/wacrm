@@ -679,7 +679,6 @@ function ConditionForm({
                 <SelectItem value="name">name</SelectItem>
                 <SelectItem value="email">email</SelectItem>
                 <SelectItem value="phone">phone</SelectItem>
-                <SelectItem value="company">company</SelectItem>
               </SelectContent>
             </Select>
           ) : (

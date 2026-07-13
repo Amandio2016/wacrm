@@ -150,9 +150,6 @@ export function ContactSidebar({ contact }: ContactSidebarProps) {
             <h3 className="mt-3 text-sm font-semibold text-foreground">
               {displayName}
             </h3>
-            {contact.company && (
-              <p className="text-xs text-muted-foreground">{contact.company}</p>
-            )}
           </div>
 
           {/* Phone */}

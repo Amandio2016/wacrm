@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AppointmentKanban } from "@/components/agenda/appointment-kanban";
 import { WeeklyCalendar } from "@/components/agenda/weekly-calendar";
+import { AgendaStatsBar } from "@/components/agenda/agenda-stats-bar";
 
 /**
  * Agenda page — the clinic's day-to-day appointment operations,
@@ -24,7 +25,11 @@ export default function AgendaPage() {
         <p className="mt-1 text-sm text-muted-foreground">{t("pageDesc")}</p>
       </div>
 
-      <Tabs defaultValue="hoje" className="mt-6">
+      <div className="mt-6">
+        <AgendaStatsBar />
+      </div>
+
+      <Tabs defaultValue="hoje">
         <TabsList>
           <TabsTrigger value="hoje">{t("tabToday")}</TabsTrigger>
           <TabsTrigger value="semana">{t("tabWeek")}</TabsTrigger>

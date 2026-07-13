@@ -134,7 +134,6 @@ export function ImportModal({
   const [file, setFile] = useState<File | null>(null);
   const [parsedRows, setParsedRows] = useState<ParsedContactRow[]>([]);
   const [hasTagsColumn, setHasTagsColumn] = useState(false);
-  const [hasCompanyColumn, setHasCompanyColumn] = useState(false);
   const [tagColorByKey, setTagColorByKey] = useState<Map<string, string>>(
     new Map()
   );
@@ -150,7 +149,6 @@ export function ImportModal({
     setFile(null);
     setParsedRows([]);
     setHasTagsColumn(false);
-    setHasCompanyColumn(false);
     setTagColorByKey(new Map());
     setResult(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
@@ -172,21 +170,18 @@ export function ImportModal({
     const {
       rows,
       hasTagsColumn: csvHasTags,
-      hasCompanyColumn: csvHasCompany,
     } = parseContactCsv(text);
 
     if (rows.length === 0) {
       toast.error(t('toastNoValidRows'));
       setParsedRows([]);
       setHasTagsColumn(false);
-      setHasCompanyColumn(false);
       setTagColorByKey(new Map());
       return;
     }
 
     setParsedRows(rows);
     setHasTagsColumn(csvHasTags);
-    setHasCompanyColumn(csvHasCompany);
 
     if (csvHasTags && accountId) {
       const { data: tags } = await supabase
@@ -277,7 +272,6 @@ export function ImportModal({
           phone: row.phone,
           name: row.name || null,
           email: row.email || null,
-          company: row.company || null,
         }));
 
         const { data, error } = await supabase
@@ -374,10 +368,6 @@ export function ImportModal({
   // values, so an all-empty tags column still renders for validation.
   const previewHasTags =
     hasTagsColumn || preview.some((row) => row.tagNames.length > 0);
-  // Company: AND — hide unless the CSV declares it and preview has data,
-  // avoiding an all-dash column that wastes horizontal space.
-  const previewHasCompany =
-    hasCompanyColumn && preview.some((row) => row.company?.trim());
 
   const tagStats = useMemo(() => {
     const names = new Set<string>();
@@ -404,7 +394,6 @@ export function ImportModal({
                   phoneCode: (chunks) => `<code class="rounded bg-muted px-1 py-0.5 text-[11px] text-muted-foreground">${chunks}</code>`,
                   nameCode: (chunks) => `<code class="rounded bg-muted px-1 py-0.5 text-[11px] text-muted-foreground">${chunks}</code>`,
                   emailCode: (chunks) => `<code class="rounded bg-muted px-1 py-0.5 text-[11px] text-muted-foreground">${chunks}</code>`,
-                  companyCode: (chunks) => `<code class="rounded bg-muted px-1 py-0.5 text-[11px] text-muted-foreground">${chunks}</code>`,
                   tagsCode: (chunks) => `<code class="rounded bg-muted px-1 py-0.5 text-[11px] text-muted-foreground">${chunks}</code>`,
                 })
               }}
@@ -496,11 +485,6 @@ export function ImportModal({
                         <th className="px-3 py-2 text-left font-medium whitespace-nowrap text-muted-foreground">
                           {t('columns.email')}
                         </th>
-                        {previewHasCompany && (
-                          <th className="px-3 py-2 text-left font-medium whitespace-nowrap text-muted-foreground">
-                            {t('columns.company')}
-                          </th>
-                        )}
                         {previewHasTags && (
                           <th className="px-3 py-2 text-left font-medium whitespace-nowrap text-muted-foreground">
                             {t('columns.tags')}
@@ -533,14 +517,6 @@ export function ImportModal({
                               maxWidth="max-w-[10rem]"
                             />
                           </td>
-                          {previewHasCompany && (
-                            <td className="px-3 py-2 text-muted-foreground">
-                              <PreviewCell
-                                value={row.company || '—'}
-                                maxWidth="max-w-[7rem]"
-                              />
-                            </td>
-                          )}
                           {previewHasTags && (
                             <td className="px-3 py-2 align-top">
                               <ImportPreviewTags

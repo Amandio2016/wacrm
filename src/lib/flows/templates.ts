@@ -223,76 +223,18 @@ const FAQ_BOT: FlowTemplate = {
 };
 
 // ============================================================
-// 3. Lead capture — collect_input chain, ends in a handoff
-// ============================================================
-const LEAD_CAPTURE: FlowTemplate = {
-  slug: "lead_capture",
-  name: "Lead capture",
-  description:
-    "Greet first-time inbounds, capture name + email + company, then hand off to sales with the answers in the note.",
-  icon: "UserPlus",
-  trigger_type: "first_inbound_message",
-  trigger_config: {},
-  entry_node_id: "start",
-  nodes: [
-    {
-      node_key: "start",
-      node_type: "start",
-      config: { next_node_key: "intro" },
-    },
-    {
-      node_key: "intro",
-      node_type: "send_message",
-      config: {
-        text: "Welcome! 👋 I'll ask a few quick questions so we can get you to the right person.",
-        next_node_key: "ask_name",
-      } as SendMessageNodeConfig,
-    },
-    {
-      node_key: "ask_name",
-      node_type: "collect_input",
-      config: {
-        prompt_text: "What's your name?",
-        var_key: "name",
-        next_node_key: "ask_email",
-      } as CollectInputNodeConfig,
-    },
-    {
-      node_key: "ask_email",
-      node_type: "collect_input",
-      config: {
-        prompt_text: "Thanks {{vars.name}}! What's your work email?",
-        var_key: "email",
-        next_node_key: "ask_company",
-      } as CollectInputNodeConfig,
-    },
-    {
-      node_key: "ask_company",
-      node_type: "collect_input",
-      config: {
-        prompt_text: "Almost done — what's your company name?",
-        var_key: "company",
-        next_node_key: "handoff",
-      } as CollectInputNodeConfig,
-    },
-    {
-      node_key: "handoff",
-      node_type: "handoff",
-      config: {
-        note: "New lead — name={{vars.name}}, email={{vars.email}}, company={{vars.company}}.",
-      } as HandoffNodeConfig,
-    },
-  ],
-};
-
-// ============================================================
 // Registry
+//
+// The former 3rd template ("Lead capture") walked a visitor through
+// name/email/company then handed off to sales — a B2B lead-gen flow
+// with no clinical meaning, and superseded anyway by the purpose-built
+// appointment-booking bot (lib/appointments/bot.ts). Removed rather
+// than reworded.
 // ============================================================
 
 const TEMPLATES: Record<string, FlowTemplate> = {
   welcome_menu: WELCOME_MENU,
   faq_bot: FAQ_BOT,
-  lead_capture: LEAD_CAPTURE,
 };
 
 export function getFlowTemplate(slug: string): FlowTemplate | null {

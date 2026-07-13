@@ -28,7 +28,6 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Phone,
   Mail,
-  Building2,
   Copy,
   Check,
   Loader2,
@@ -92,7 +91,6 @@ export function ContactDetailView({
   const [editName, setEditName] = useState('');
   const [editPhone, setEditPhone] = useState('');
   const [editEmail, setEditEmail] = useState('');
-  const [editCompany, setEditCompany] = useState('');
   const [savingDetails, setSavingDetails] = useState(false);
 
   // Tags tab
@@ -133,7 +131,6 @@ export function ContactDetailView({
       setEditName(data.name ?? '');
       setEditPhone(data.phone);
       setEditEmail(data.email ?? '');
-      setEditCompany(data.company ?? '');
     }
     setLoading(false);
   }, [contactId, supabase]);
@@ -260,7 +257,6 @@ export function ContactDetailView({
         name: editName.trim() || null,
         phone: editPhone.trim(),
         email: editEmail.trim() || null,
-        company: editCompany.trim() || null,
         updated_at: new Date().toISOString(),
       })
       .eq('id', contactId);
@@ -480,12 +476,6 @@ export function ContactDetailView({
                         {contact.email}
                       </span>
                     )}
-                    {contact.company && (
-                      <span className="flex items-center gap-1">
-                        <Building2 className="size-3" />
-                        {contact.company}
-                      </span>
-                    )}
                   </div>
                 </div>
               </div>
@@ -545,7 +535,7 @@ export function ContactDetailView({
               <TabsContent value="details" className="flex-1 overflow-y-auto px-4 py-3">
                 <div className="space-y-3">
                   <div className="space-y-1.5">
-                    <Label className="text-muted-foreground text-xs">{t('company', { fallback: 'Name' })}</Label>
+                    <Label className="text-muted-foreground text-xs">{t('nameLabel')}</Label>
                     <Input
                       value={editName}
                       onChange={(e) => setEditName(e.target.value)}
@@ -567,14 +557,6 @@ export function ContactDetailView({
                     <Input
                       value={editEmail}
                       onChange={(e) => setEditEmail(e.target.value)}
-                      className="bg-muted border-border text-foreground h-8 text-sm"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-muted-foreground text-xs">{t('company')}</Label>
-                    <Input
-                      value={editCompany}
-                      onChange={(e) => setEditCompany(e.target.value)}
                       className="bg-muted border-border text-foreground h-8 text-sm"
                     />
                   </div>

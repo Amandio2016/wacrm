@@ -446,6 +446,7 @@
       "contactInfo": "Dados do contacto",
       "unnamed": "Desconhecido",
       "contactDetailsDesc": "Detalhes do contacto",
+      "nameLabel": "Nome",
       "phone": "Telefone",
       "email": "Email",
       "company": "Empresa",
@@ -499,7 +500,7 @@
     },
     "importModal": {
       "title": "Importar contactos",
-      "desc": "Carregue um CSV com uma coluna <phoneCode>phone</phoneCode> obrigatória. Opcionais: <nameCode>name</nameCode>, <emailCode>email</emailCode>, <companyCode>company</companyCode>, <tagsCode>tags</tagsCode> (separadas por vírgulas; use aspas em células com várias etiquetas).",
+      "desc": "Carregue um CSV com uma coluna <phoneCode>phone</phoneCode> obrigatória. Opcionais: <nameCode>name</nameCode>, <emailCode>email</emailCode>, <tagsCode>tags</tagsCode> (separadas por vírgulas; use aspas em células com várias etiquetas).",
       "uploadDropzone": "Clique para escolher um ficheiro CSV",
       "uploadHint": ".csv até ao limite do seu navegador",
       "rowsReady": "{count} linha pronta",
@@ -2016,6 +2017,14 @@
     "pageDesc": "As consultas de hoje e a agenda semanal por profissional.",
     "tabToday": "Hoje",
     "tabWeek": "Semana",
+    "stats": {
+      "total": "Hoje",
+      "pendentes": "Pendentes",
+      "confirmadas": "Confirmadas",
+      "concluidas": "Concluídas",
+      "faltas": "Faltas",
+      "canceladas": "Canceladas"
+    },
     "kanban": {
       "loading": "A carregar…",
       "refresh": "Atualizar",

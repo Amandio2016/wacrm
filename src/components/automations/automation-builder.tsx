@@ -384,7 +384,6 @@ function ContactFieldSelect({
     >
       <option value="name">{t("fields.name")}</option>
       <option value="email">{t("fields.email")}</option>
-      <option value="company">{t("fields.company")}</option>
       {customFields.length > 0 && (
         <optgroup label={t("fields.customFields")}>
           {customFields.map((f) => (

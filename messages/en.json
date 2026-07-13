@@ -446,6 +446,7 @@
       "contactInfo": "Contact Information",
       "unnamed": "Unknown",
       "contactDetailsDesc": "Contact details",
+      "nameLabel": "Name",
       "phone": "Phone",
       "email": "Email",
       "company": "Company",
@@ -499,7 +500,7 @@
     },
     "importModal": {
       "title": "Import Contacts",
-      "desc": "Upload a CSV with a required <phoneCode>phone</phoneCode> column. Optional: <nameCode>name</nameCode>, <emailCode>email</emailCode>, <companyCode>company</companyCode>, <tagsCode>tags</tagsCode> (comma-separated; quote multi-tag cells).",
+      "desc": "Upload a CSV with a required <phoneCode>phone</phoneCode> column. Optional: <nameCode>name</nameCode>, <emailCode>email</emailCode>, <tagsCode>tags</tagsCode> (comma-separated; quote multi-tag cells).",
       "uploadDropzone": "Click to choose a CSV file",
       "uploadHint": ".csv up to your browser limit",
       "rowsReady": "{count} row ready",
@@ -2016,6 +2017,14 @@
     "pageDesc": "Today's appointments and the weekly schedule per professional.",
     "tabToday": "Today",
     "tabWeek": "Week",
+    "stats": {
+      "total": "Today",
+      "pendentes": "Pending",
+      "confirmadas": "Confirmed",
+      "concluidas": "Completed",
+      "faltas": "No-shows",
+      "canceladas": "Cancelled"
+    },
     "kanban": {
       "loading": "Loading…",
       "refresh": "Refresh",

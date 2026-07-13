@@ -53,7 +53,6 @@ export function ContactForm({
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
-  const [company, setCompany] = useState('');
   const [saving, setSaving] = useState(false);
 
   // Duplicate-phone detection for NEW contacts. `exact` (same digits)
@@ -74,7 +73,6 @@ export function ContactForm({
       setName(contact?.name ?? '');
       setPhone(contact?.phone ?? '');
       setEmail(contact?.email ?? '');
-      setCompany(contact?.company ?? '');
       setSelectedTagIds(contactTags.map((ct) => ct.tag_id));
       setDupMatch(null);
       fetchTags();
@@ -155,7 +153,6 @@ export function ContactForm({
             name: name.trim() || null,
             phone: phone.trim(),
             email: email.trim() || null,
-            company: company.trim() || null,
             updated_at: new Date().toISOString(),
           })
           .eq('id', contactId);
@@ -169,7 +166,6 @@ export function ContactForm({
             name: name.trim() || null,
             phone: phone.trim(),
             email: email.trim() || null,
-            company: company.trim() || null,
           })
           .select('id')
           .single();
@@ -309,19 +305,6 @@ export function ContactForm({
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder={t('emailPlaceholder')}
-              className="bg-muted border-border text-foreground placeholder:text-muted-foreground"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="cf-company" className="text-muted-foreground">
-              {t('companyLabel')}
-            </Label>
-            <Input
-              id="cf-company"
-              value={company}
-              onChange={(e) => setCompany(e.target.value)}
-              placeholder={t('companyPlaceholder')}
               className="bg-muted border-border text-foreground placeholder:text-muted-foreground"
             />
           </div>
